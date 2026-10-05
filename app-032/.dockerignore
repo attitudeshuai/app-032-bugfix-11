@@ -1,0 +1,20 @@
+# 依赖与产物
+node_modules
+dist
+coverage
+
+# 版本控制与本地配置
+.git
+.gitignore
+.env
+.env.*
+.vscode
+.idea
+*.log
+
+# 构建描述文件（Dockerfile 由 docker 引擎直接读取，无需进入上下文）
+Dockerfile
+docker-compose.yml
+README.md
+# 注意：nginx.conf 必须保留在构建上下文中（Dockerfile 的 COPY nginx.conf 需要它）
+# 同理保留 package-lock.json 与 src/data/lantern-types.json（灯型与工艺参数）

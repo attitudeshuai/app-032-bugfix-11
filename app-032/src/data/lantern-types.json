@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "craft": {
+    "defaultLashAllowanceMm": 20,
+    "defaultSeamAllowanceMm": 10,
+    "defaultOverlapMm": 10,
+    "defaultDivisions": 24,
+    "divMin": 6,
+    "divMax": 96,
+    "lashPerJointM": 0.5,
+    "led": {
+      "perLiter": 0.35,
+      "min": 12,
+      "rule": "按灯体体积 × 0.35 颗/升估算（最低 12 颗，暖白高亮 LED），仅作亮度建议，不做电气设计与控制"
+    }
+  },
+  "coverings": [
+    {
+      "id": "xuan",
+      "name": "宣纸",
+      "gluePerM2": 45,
+      "wasteRatio": 0.12,
+      "color": "#f7f2e4",
+      "note": "吸水性强，缝份建议 10~12mm，胶用浆糊"
+    },
+    {
+      "id": "silk",
+      "name": "绸布",
+      "gluePerM2": 25,
+      "wasteRatio": 0.1,
+      "color": "#e9c7c7",
+      "note": "易滑，裁片需略加湿定型，缝份建议 10mm"
+    },
+    {
+      "id": "parchment",
+      "name": "羊皮纸",
+      "gluePerM2": 35,
+      "wasteRatio": 0.08,
+      "color": "#e7d3ad",
+      "note": "挺度好，折边可用低温熨烫定型"
+    }
+  ],
+  "presets": [
+    {
+      "id": "hex-palace",
+      "name": "六角宫灯",
+      "kind": "prism",
+      "tagline": "最经典的正六棱柱宫灯，上下收口",
+      "description": "六根竖篾 + 四层横篾，上下收口圈各一圈；适合庙会与门楼悬挂。",
+      "params": {
+        "maxDiameterMm": 320,
+        "totalHeightMm": 420,
+        "mouthDiameterMm": 140,
+        "baseDiameterMm": 140,
+        "sides": 6,
+        "layerCount": 4,
+        "mouthStyle": "taper",
+        "bottomStyle": "taper",
+        "smoothness": 0.45,
+        "covering": "silk",
+        "layerColors": ["#b3241f", "#c8452c", "#c8452c", "#b3241f"],
+        "color": "#b3241f"
+      }
+    },
+    {
+      "id": "oct-palace",
+      "name": "八角宫灯",
+      "kind": "prism",
+      "tagline": "正八棱柱大宫灯，棱多面窄更圆润",
+      "description": "八棱面窄，蒙面裁片数量更多，适合灯会大型悬挂灯。",
+      "params": {
+        "maxDiameterMm": 400,
+        "totalHeightMm": 520,
+        "mouthDiameterMm": 180,
+        "baseDiameterMm": 180,
+        "sides": 8,
+        "layerCount": 5,
+        "mouthStyle": "taper",
+        "bottomStyle": "taper",
+        "smoothness": 0.4,
+        "covering": "silk",
+        "layerColors": ["#a51e1e", "#bf3324", "#cc4a2b", "#bf3324", "#a51e1e"],
+        "color": "#a51e1e"
+      }
+    },
+    {
+      "id": "round-lantern",
+      "name": "圆形灯笼",
+      "kind": "revolution",
+      "tagline": "旋转体圆灯笼，母线等分近似展开",
+      "description": "八根母线篾 + 三层横篾圈，蒙面按 24 等分展开成小块拼接。",
+      "params": {
+        "maxDiameterMm": 300,
+        "totalHeightMm": 300,
+        "mouthDiameterMm": 90,
+        "baseDiameterMm": 90,
+        "sides": 8,
+        "layerCount": 3,
+        "mouthStyle": "taper",
+        "bottomStyle": "taper",
+        "smoothness": 0.5,
+        "divisions": 24,
+        "covering": "xuan",
+        "layerColors": ["#d94a2a", "#e0703a", "#d94a2a"],
+        "color": "#d94a2a"
+      }
+    },
+    {
+      "id": "lotus",
+      "name": "莲花灯",
+      "kind": "revolution",
+      "tagline": "葫芦口收颈的莲花造型",
+      "description": "收口曲线用贝塞尔控制点调出莲花颈形，适合水灯与摆件。",
+      "params": {
+        "maxDiameterMm": 360,
+        "totalHeightMm": 260,
+        "mouthDiameterMm": 120,
+        "baseDiameterMm": 150,
+        "sides": 10,
+        "layerCount": 4,
+        "mouthStyle": "gourd",
+        "bottomStyle": "taper",
+        "smoothness": 0.62,
+        "ctrl1": { "x": 0.12, "y": 0.3 },
+        "ctrl2": { "x": 0.85, "y": 0.78 },
+        "divisions": 24,
+        "covering": "silk",
+        "layerColors": ["#d6486a", "#e26b86", "#f095a8", "#f6c2cd"],
+        "color": "#d6486a"
+      }
+    },
+    {
+      "id": "tetra-zodiac",
+      "name": "正四面体生肖灯",
+      "kind": "polyhedron",
+      "tagline": "四面体底稿，四块三角蒙面",
+      "description": "六根棱篾 + 四块正三角裁片，适合生肖卡通造型的骨架底稿。",
+      "params": {
+        "maxDiameterMm": 300,
+        "totalHeightMm": 245,
+        "mouthDiameterMm": 300,
+        "baseDiameterMm": 300,
+        "sides": 4,
+        "layerCount": 1,
+        "mouthStyle": "flat",
+        "bottomStyle": "flat",
+        "smoothness": 0,
+        "covering": "xuan",
+        "layerColors": ["#c9a227"],
+        "color": "#c9a227"
+      }
+    },
+    {
+      "id": "octa-zodiac",
+      "name": "正八面体生肖灯",
+      "kind": "polyhedron",
+      "tagline": "八面体底稿，八块三角蒙面",
+      "description": "十二根棱篾 + 八块正三角裁片，棱角分明适合走兽造型。",
+      "params": {
+        "maxDiameterMm": 320,
+        "totalHeightMm": 320,
+        "mouthDiameterMm": 320,
+        "baseDiameterMm": 320,
+        "sides": 8,
+        "layerCount": 1,
+        "mouthStyle": "flat",
+        "bottomStyle": "flat",
+        "smoothness": 0,
+        "covering": "parchment",
+        "layerColors": ["#7a9a3f"],
+        "color": "#7a9a3f"
+      }
+    },
+    {
+      "id": "box-revolving",
+      "name": "方形走马灯",
+      "kind": "box",
+      "tagline": "方形灯体 + 中轴辐条，配走马叶轮",
+      "description": "四棱方形灯体，含中轴与上下辐条，蒙面为四块长方形裁片。",
+      "params": {
+        "maxDiameterMm": 280,
+        "totalHeightMm": 380,
+        "mouthDiameterMm": 280,
+        "baseDiameterMm": 280,
+        "sides": 4,
+        "layerCount": 2,
+        "mouthStyle": "flat",
+        "bottomStyle": "flat",
+        "smoothness": 0,
+        "covering": "silk",
+        "layerColors": ["#b8492a", "#b8492a"],
+        "color": "#b8492a"
+      }
+    }
+  ]
+}
