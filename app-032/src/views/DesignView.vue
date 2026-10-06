@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import LanternPreview from '../components/LanternPreview.vue'
 import ChecksPanel from '../components/ChecksPanel.vue'
-import { getLantern, distributeLayers, syncLayerDiameters } from '../core/store'
+import { getLantern, distributeLayers, syncLayerDiameters, touchLantern, diameterStaleLayers } from '../core/store'
 import { computeAll } from '../core/checks'
 import { DEFAULT_LOFT_OPTIONS } from '../core/paginate'
 import { buildGeometry, polyhedronInfo, r1 } from '../core/geometry'
@@ -29,6 +29,66 @@ const full = computed(() => {
 
 const geo = computed(() => (lantern.value ? buildGeometry(lantern.value) : null))
 const shoulderPct = computed(() => (geo.value ? ((geo.value.kTop + geo.value.kBot) * 100).toFixed(0) : '0'))
+
+/**
+ * 轮廓参数的统一收口：凡是改变轮廓形状的输入（v-model 直接改对象的那些），
+ * 都在本 watcher 里重算分层直径并记一次修改时间。
+ * 三处（本机存档 / 列表 / 分层直径表）因此始终是同一份结论。
+ */
+watch(
+  () => {
+    const l = lantern.value
+    if (!l) return null
+    return [
+      l.maxDiameterMm,
+      l.mouthDiameterMm,
+      l.baseDiameterMm,
+      l.sides,
+      l.mouthStyle,
+      l.bottomStyle,
+      l.smoothness,
+      l.divisions,
+      l.ctrl1.x,
+      l.ctrl1.y,
+      l.ctrl2.x,
+      l.ctrl2.y,
+      l.layers.map((x) => x.heightMm).join(',')
+    ]
+  },
+  () => {
+    const l = lantern.value
+    if (!l) return
+    syncLayerDiameters(l)
+    touchLantern(l)
+  }
+)
+
+/** 非几何参数（名字、缝份、批量、配色等）只更新修改时间，不必重算直径 */
+watch(
+  () => {
+    const l = lantern.value
+    if (!l) return null
+    return [
+      l.name,
+      l.covering,
+      l.seamAllowanceMm,
+      l.lashAllowanceMm,
+      l.batchCount,
+      l.wasteRatio,
+      l.pageSize,
+      l.overlapMm,
+      l.color,
+      l.layerColors.join(',')
+    ]
+  },
+  () => {
+    if (lantern.value) touchLantern(lantern.value)
+  }
+)
+
+/** 哪几层显示的直径与当前几何对不上（陈旧一眼可见） */
+const staleLayers = computed(() => (lantern.value ? diameterStaleLayers(lantern.value) : []))
+const anyStale = computed(() => staleLayers.value.some(Boolean))
 
 /** 边界提示：收口/底口直径不应超过最大直径（几何会按最大直径截断） */
 const diameterWarn = computed(() => {
@@ -56,6 +116,7 @@ function onTotalHeight(e: Event) {
   const v = Math.max(40, Number((e.target as HTMLInputElement).value) || 0)
   l.totalHeightMm = v
   distributeLayers(l)
+  touchLantern(l)
 }
 
 function onLayerCount(e: Event) {
@@ -64,6 +125,7 @@ function onLayerCount(e: Event) {
   const n = Math.max(1, Math.min(12, Math.round(Number((e.target as HTMLInputElement).value) || 1)))
   l.layers = Array.from({ length: n }, () => ({ heightMm: l.totalHeightMm / n, diameterMm: 0 }))
   distributeLayers(l)
+  touchLantern(l)
 }
 
 function onLayerHeight(i: number, e: Event) {
@@ -72,6 +134,7 @@ function onLayerHeight(i: number, e: Event) {
   const v = Math.max(10, Number((e.target as HTMLInputElement).value) || 0)
   l.layers[i].heightMm = r1(v)
   syncLayerDiameters(l)
+  touchLantern(l)
 }
 
 function onCovering(e: Event) {
@@ -80,12 +143,14 @@ function onCovering(e: Event) {
   const v = (e.target as HTMLSelectElement).value as Lantern['covering']
   l.covering = v
   l.wasteRatio = coveringSpec(v).wasteRatio
+  touchLantern(l)
 }
 
 function setSides(e: Event) {
   const l = lantern.value
   if (!l) return
   l.sides = Math.max(3, Math.min(l.kind === 'revolution' ? 24 : 12, Math.round(Number((e.target as HTMLInputElement).value) || 3)))
+  touchLantern(l)
 }
 
 // ---- 尺寸反推（§5） ----
@@ -111,6 +176,7 @@ function applyDiameter(v: number) {
   l.baseDiameterMm = Math.round(l.baseDiameterMm * ratio)
   l.maxDiameterMm = next
   syncLayerDiameters(l)
+  touchLantern(l)
 }
 
 const panelsPreview = computed<Panel[]>(() => full.value?.panels.panels.slice(0, 4) || [])
@@ -274,17 +340,24 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(ly, i) in lantern.layers" :key="i">
+          <tr v-for="(ly, i) in lantern.layers" :key="i" :class="{ stale: staleLayers[i] }">
             <td class="mono">{{ i + 1 }}</td>
             <td><input :value="ly.heightMm" type="number" min="10" step="1" @change="onLayerHeight(i, $event)" /></td>
-            <td class="mono">{{ ly.diameterMm.toFixed(1) }}</td>
+            <td class="mono dia">
+              {{ ly.diameterMm.toFixed(1) }}
+              <button v-if="staleLayers[i]" class="stale-flag" title="该层直径与当前参数不符，点此重算" @click="syncLayerDiameters(lantern)">陈旧，点此刷新</button>
+            </td>
             <td>
               <input v-model="lantern.layerColors[i]" type="color" />
             </td>
           </tr>
         </tbody>
       </table>
-      <small class="hint">分段高之和 = 总高 {{ lantern.totalHeightMm }}mm；直径由收口曲线自动推算。</small>
+      <small class="hint">
+        分段高之和 = 总高 {{ lantern.totalHeightMm }}mm；各层直径由最大直径、收口直径与收口曲线统一推算，
+        改任意一处都会立即刷新（底层层径随底口直径、末层层径随收口直径，改层高只移动该层在轮廓上的位置）。
+        <button v-if="anyStale" class="mini-btn" @click="syncLayerDiameters(lantern)">立即重算全部直径</button>
+      </small>
 
       <h3>批量制灯</h3>
       <div class="row">
@@ -513,6 +586,25 @@ small {
 .layers td {
   padding: 3px 6px;
   border-bottom: 1px dashed var(--line);
+}
+
+.layers tr.stale td {
+  background: #fdf3e2;
+}
+
+.stale-flag {
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 10px;
+  color: #8a4b12;
+  border-color: #e0b36c;
+  background: #fbe8c8;
+}
+
+.mini-btn {
+  margin-left: 8px;
+  padding: 1px 8px;
+  font-size: 11px;
 }
 
 .layers input[type='number'] {

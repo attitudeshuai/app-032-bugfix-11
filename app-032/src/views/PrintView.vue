@@ -9,7 +9,7 @@
 import { computed, onUnmounted, reactive, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChecksPanel from '../components/ChecksPanel.vue'
-import { getLantern } from '../core/store'
+import { getLantern, touchLantern } from '../core/store'
 import { CALIBRATION_CIRCLE_MM, CALIBRATION_RULER_MM, computeAll } from '../core/checks'
 import {
   DEFAULT_LOFT_OPTIONS,
@@ -56,6 +56,7 @@ watch(
     if (!l) return
     l.pageSize = paper
     l.overlapMm = overlapMm
+    touchLantern(l)
   }
 )
 

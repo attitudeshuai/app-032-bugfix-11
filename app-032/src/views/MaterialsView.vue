@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChecksPanel from '../components/ChecksPanel.vue'
-import { getLantern } from '../core/store'
+import { getLantern, touchLantern } from '../core/store'
 import { computeAll } from '../core/checks'
 import { DEFAULT_LOFT_OPTIONS } from '../core/paginate'
 import { downloadText, materialsCsv } from '../core/exporter'
@@ -17,6 +17,14 @@ const full = computed(() => {
   if (!l) return null
   return computeAll(l, { ...DEFAULT_LOFT_OPTIONS, paper: l.pageSize, overlapMm: l.overlapMm })
 })
+
+// 批量/损耗改动也计入「最近修改」
+watch(
+  () => [lantern.value?.batchCount, lantern.value?.wasteRatio],
+  () => {
+    if (lantern.value) touchLantern(lantern.value)
+  }
+)
 
 const cov = computed(() => (lantern.value ? coveringSpec(lantern.value.covering) : null))
 

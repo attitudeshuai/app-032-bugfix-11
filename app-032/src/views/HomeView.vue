@@ -2,7 +2,15 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { COVERINGS, PRESETS, coveringLabel, kindLabel, styleLabel } from '../core/craft'
-import { addLantern, createFromPreset, duplicateLantern, removeLantern, state } from '../core/store'
+import {
+  addLantern,
+  createFromPreset,
+  dismissNotice,
+  duplicateLantern,
+  formatUpdatedAt,
+  removeLantern,
+  state
+} from '../core/store'
 
 const router = useRouter()
 
@@ -26,14 +34,29 @@ function del(id: string, name: string) {
 }
 
 const lanterns = computed(() => state.lanterns)
-
-function updatedAt(iso: string): string {
-  return iso.slice(0, 10)
-}
+const notice = computed(() => state.notice)
 </script>
 
 <template>
   <div class="home">
+    <section v-if="notice" class="store-notice" :class="notice.kind">
+      <header>
+        <b>⚠ {{ notice.title }}</b>
+        <button class="close" @click="dismissNotice">我知道了</button>
+      </header>
+      <p>{{ notice.detail }}</p>
+      <ul class="notice-lists">
+        <li v-if="notice.dropped.length">
+          <span class="tag drop">已作废（{{ notice.dropped.length }}）</span>
+          {{ notice.dropped.join('、') }}
+        </li>
+        <li>
+          <span class="tag keep">已保留（{{ notice.kept.length }}）</span>
+          {{ notice.kept.join('、') }}
+        </li>
+      </ul>
+    </section>
+
     <section class="hero">
       <h1>选灯型 → 填尺寸 → 出骨架件表 → 出裁片 → 1:1 打印</h1>
       <p>
@@ -95,7 +118,7 @@ function updatedAt(iso: string): string {
             <td class="mono">⌀{{ l.maxDiameterMm }} × H{{ l.totalHeightMm }}</td>
             <td class="mono">{{ l.layers.length }} 层 / {{ l.sides }} 棱</td>
             <td>{{ coveringLabel(l.covering) }}</td>
-            <td class="mono">{{ updatedAt(l.updatedAt) }}</td>
+            <td class="mono">{{ formatUpdatedAt(l.updatedAt) }}</td>
             <td class="ops">
               <button @click="open(l.id)">打开</button>
               <button @click="dup(l.id)">复制</button>
@@ -127,6 +150,62 @@ function updatedAt(iso: string): string {
   display: flex;
   flex-direction: column;
   gap: 22px;
+}
+
+.store-notice {
+  border-radius: 10px;
+  border: 1px solid;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  box-shadow: var(--shadow);
+}
+
+.store-notice.reset {
+  background: #fdecea;
+  border-color: #e4a29c;
+  color: #7a1c17;
+}
+
+.store-notice.partial {
+  background: #fdf6e3;
+  border-color: #e0c78a;
+  color: #6f4e10;
+}
+
+.store-notice header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.store-notice p {
+  margin: 0 0 6px;
+}
+
+.notice-lists {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notice-lists .tag {
+  display: inline-block;
+  font-size: 11px;
+  border-radius: 4px;
+  padding: 1px 8px;
+  margin-right: 8px;
+  border: 1px solid currentColor;
+}
+
+.store-notice .close {
+  flex: none;
+  padding: 3px 12px;
 }
 
 .hero {
