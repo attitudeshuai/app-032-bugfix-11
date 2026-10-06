@@ -23,6 +23,7 @@ const cov = computed(() => (lantern.value ? coveringSpec(lantern.value.covering)
 const layerFabric = computed(() => {
   const l = lantern.value
   if (!l || !full.value) return []
+  const sections = full.value.frame.geometry.sections
   return l.layers.map((ly, i) => {
     const ps = full.value!.panels.panels.filter((p) => p.layerIndex === i)
     const area = ps.reduce((s, p) => s + panelCutArea(p) * p.qty, 0)
@@ -30,7 +31,8 @@ const layerFabric = computed(() => {
       i: i + 1,
       color: l.layerColors[i] || l.color,
       height: ly.heightMm,
-      diameter: ly.diameterMm,
+      // 与放样页直径表、本机存档同源：始终按当前参数现算，不读可能过期的存档直径
+      diameter: sections[i + 1] ? sections[i + 1].radiusMm * 2 : ly.diameterMm,
       kinds: ps.length,
       perPiece: ps.length ? panelCutArea(ps[0]) : 0,
       qty: ps.reduce((s, p) => s + p.qty, 0),

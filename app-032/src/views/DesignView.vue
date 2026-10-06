@@ -30,6 +30,24 @@ const full = computed(() => {
 const geo = computed(() => (lantern.value ? buildGeometry(lantern.value) : null))
 const shoulderPct = computed(() => (geo.value ? ((geo.value.kTop + geo.value.kBot) * 100).toFixed(0) : '0'))
 
+/**
+ * 第 i 层上沿的直径：始终按当前参数从轮廓现算，
+ * 与本机存档里回写的 layers[i].diameterMm 同源（存档写入前也会重算一遍）。
+ * 改任意轮廓参数（最大直径 / 收口 / 曲线 / 分段高 …）后这里立刻刷新，
+ * 不会再出现回到列表再打开、某层还是老数的情况。
+ */
+function layerDiameter(i: number): number {
+  const g = geo.value
+  const sec = g?.sections[i + 1]
+  return sec ? r1(sec.radiusMm * 2) : 0
+}
+
+/** 任何影响轮廓的参数改动后立即把每层直径按当前参数刷新（存档随后落盘时会再刷一遍） */
+function onGeometryChange() {
+  const l = lantern.value
+  if (l) syncLayerDiameters(l)
+}
+
 /** 边界提示：收口/底口直径不应超过最大直径（几何会按最大直径截断） */
 const diameterWarn = computed(() => {
   const l = lantern.value
@@ -86,6 +104,7 @@ function setSides(e: Event) {
   const l = lantern.value
   if (!l) return
   l.sides = Math.max(3, Math.min(l.kind === 'revolution' ? 24 : 12, Math.round(Number((e.target as HTMLInputElement).value) || 3)))
+  onGeometryChange()
 }
 
 // ---- 尺寸反推（§5） ----
@@ -120,6 +139,7 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
   if (!l) return
   if (v.which === 1) l.ctrl1 = { x: v.x, y: v.y }
   else l.ctrl2 = { x: v.x, y: v.y }
+  onGeometryChange()
 }
 </script>
 
@@ -163,7 +183,7 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
       <div class="row">
         <div class="field">
           <label>最大直径 (mm)</label>
-          <input v-model.number="lantern.maxDiameterMm" type="number" min="20" max="3000" step="1" />
+          <input v-model.number="lantern.maxDiameterMm" type="number" min="20" max="3000" step="1" @change="onGeometryChange" />
         </div>
         <div class="field">
           <label>总高 (mm)</label>
@@ -189,6 +209,7 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
             max="3000"
             step="1"
             :disabled="lantern.mouthStyle === 'flat'"
+            @change="onGeometryChange"
           />
         </div>
         <div class="field">
@@ -200,6 +221,7 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
             max="3000"
             step="1"
             :disabled="lantern.bottomStyle === 'flat'"
+            @change="onGeometryChange"
           />
         </div>
       </div>
@@ -209,7 +231,7 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
       <div class="row">
         <div class="field">
           <label>上收口方式</label>
-          <select v-model="lantern.mouthStyle">
+          <select v-model="lantern.mouthStyle" @change="onGeometryChange">
             <option value="flat">平口</option>
             <option value="taper">收口</option>
             <option value="gourd">葫芦口（贝塞尔）</option>
@@ -217,7 +239,7 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
         </div>
         <div class="field">
           <label>下收口方式</label>
-          <select v-model="lantern.bottomStyle">
+          <select v-model="lantern.bottomStyle" @change="onGeometryChange">
             <option value="flat">平口</option>
             <option value="taper">收口</option>
             <option value="gourd">葫芦口（贝塞尔）</option>
@@ -227,7 +249,7 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
 
       <div class="field">
         <label>收口曲线强度 <em>{{ lantern.smoothness.toFixed(2) }}</em></label>
-        <input v-model.number="lantern.smoothness" type="range" min="0" max="1" step="0.02" />
+        <input v-model.number="lantern.smoothness" type="range" min="0" max="1" step="0.02" @input="onGeometryChange" />
         <small>当前收口段合计占总高 {{ shoulderPct }}%（上 + 下）</small>
       </div>
 
@@ -277,7 +299,7 @@ function onCtrl(v: { which: 1 | 2; x: number; y: number }) {
           <tr v-for="(ly, i) in lantern.layers" :key="i">
             <td class="mono">{{ i + 1 }}</td>
             <td><input :value="ly.heightMm" type="number" min="10" step="1" @change="onLayerHeight(i, $event)" /></td>
-            <td class="mono">{{ ly.diameterMm.toFixed(1) }}</td>
+            <td class="mono" :title="`第 ${i + 1} 层上沿直径（按当前参数现算，存档写入前会再刷新一遍）`">{{ layerDiameter(i).toFixed(1) }}</td>
             <td>
               <input v-model="lantern.layerColors[i]" type="color" />
             </td>

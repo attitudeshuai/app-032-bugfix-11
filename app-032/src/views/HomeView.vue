@@ -27,8 +27,12 @@ function del(id: string, name: string) {
 
 const lanterns = computed(() => state.lanterns)
 
+/** 最近修改：本机时间，写到「年-月-日 时:分」，不再只给年月日 */
 function updatedAt(iso: string): string {
-  return iso.slice(0, 10)
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 </script>
 
@@ -74,9 +78,8 @@ function updatedAt(iso: string): string {
     </section>
 
     <section class="block">
-      <h2>我的灯样 <em>（保存在本机浏览器，不上传）</em></h2>
-      <p v-if="lanterns.length === 0" class="empty">还没有灯样，先在上面选一个灯型新建。</p>
-      <table v-else class="list">
+      <h2>我的灯样 <em>（保存在本机浏览器，不上传；一盏都没有时会自动给一盏预设灯样）</em></h2>
+      <table class="list">
         <thead>
           <tr>
             <th>名称</th>

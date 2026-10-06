@@ -29,11 +29,13 @@ const ratio = computed(() => {
 const palette = computed(() => {
   const l = lantern.value
   if (!l) return []
+  const sections = full.value?.panels.geometry.sections
   return l.layers.map((ly, i) => ({
     i: i + 1,
     color: l.layerColors[i] || l.color,
     height: ly.heightMm,
-    diameter: ly.diameterMm,
+    // 与放样页直径表、本机存档同源：始终按当前参数现算，不读可能过期的存档直径
+    diameter: sections?.[i + 1] ? sections[i + 1].radiusMm * 2 : ly.diameterMm,
     panels: full.value?.panels.panels.filter((p) => p.layerIndex === i).length || 0
   }))
 })

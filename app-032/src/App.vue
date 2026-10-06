@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { state } from './core/store'
+import { state, dismissLoadNotice } from './core/store'
 
 const route = useRoute()
 const lanternId = computed(() => (route.params.id as string) || '')
@@ -21,6 +21,14 @@ const nav = computed(() => {
     { to: `/materials/${id}`, label: '材料与备料' }
   ]
 })
+
+/** 本机时间，写到「年-月-日 时:分」 */
+function formatSaved(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
 </script>
 
 <template>
@@ -40,6 +48,11 @@ const nav = computed(() => {
     </header>
 
     <main class="app-main">
+      <div v-if="state.loadNotice" class="load-notice no-print" role="alert">
+        <span class="load-notice-icon">!</span>
+        <p class="load-notice-text">{{ state.loadNotice }}</p>
+        <button class="load-notice-close" @click="dismissLoadNotice">知道了</button>
+      </div>
       <router-view v-slot="{ Component }">
         <component :is="Component" />
       </router-view>
@@ -47,7 +60,9 @@ const nav = computed(() => {
 
     <footer class="app-footer no-print">
       骨架放样 + 蒙面裁片 + 1:1 图纸 + 备料单｜灯型库与工艺参数本地打包，断网可用
-      <span v-if="state.storageError" class="storage-error">本地存储异常：{{ state.storageError }}</span>
+      <span class="save-state" :class="{ bad: state.storageError }">
+        {{ state.storageError ? `本机存储异常：${state.storageError}` : state.lastSavedAt ? `本机存档已于 ${formatSaved(state.lastSavedAt)} 保存` : '' }}
+      </span>
     </footer>
   </div>
 </template>
@@ -208,7 +223,60 @@ a {
   justify-content: center;
 }
 
-.storage-error {
+.load-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  background: #fdf3e2;
+  border: 1px solid #e0b86f;
+  border-left: 5px solid #b8891f;
+  border-radius: 8px;
+  color: #6f4c10;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.load-notice-icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #b8891f;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.load-notice-text {
+  margin: 0;
+  flex: 1;
+}
+
+.load-notice-close {
+  flex: none;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 12px;
+  border: 1px solid #d9b571;
+  border-radius: 6px;
+  background: #fff;
+  color: #6f4c10;
+  cursor: pointer;
+}
+
+.load-notice-close:hover {
+  background: #f7e8c8;
+}
+
+.save-state {
+  color: var(--jade);
+}
+
+.save-state.bad {
   color: var(--red);
 }
 
